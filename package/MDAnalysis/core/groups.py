@@ -154,6 +154,9 @@ def make_classes():
     # The 'GBase' middle man is needed so that a single topologyattr
     #  patching applies automatically to all groups.
     GBase = bases[GroupBase] = _TopologyAttrContainer._subclass()
+    GBase._SETATTR_WHITELIST = {'positions', 'velocities', 'forces',
+                                'atoms', 'segments', 'residues'}
+
     for cls in groups:
         bases[cls] = GBase._subclass()
 
@@ -255,6 +258,12 @@ class _TopologyAttrContainer(object):
         else:
             setattr(cls, attr.attrname,
                     property(getter, setter, None, attr.groupdoc))
+
+    @classmethod
+    def _whitelist(cls, attr):
+        """Allow an attribute to be set in Groups"""
+        cls._SETATTR_WHITELIST.add(attr.attrname)
+        cls._SETATTR_WHITELIST.add(attr.singular)
 
 
 class _MutableBase(object):
@@ -427,6 +436,11 @@ class GroupBase(_MutableBase):
 
     def __hash__(self):
         return hash((self._u, self.__class__, tuple(self.ix.tolist())))
+
+    def __setattr__(self, attr, value):
+        if not (attr.startswith('_') or attr in self._SETATTR_WHITELIST):
+            raise AttributeError("I cannae do it captain!")
+        super(GroupBase, self).__setattr__(attr, value)
 
     def __len__(self):
         return len(self._ix)
