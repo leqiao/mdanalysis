@@ -155,7 +155,7 @@ def make_classes():
     #  patching applies automatically to all groups.
     GBase = bases[GroupBase] = _TopologyAttrContainer._subclass()
     GBase._SETATTR_WHITELIST = {'positions', 'velocities', 'forces',
-                                'atoms', 'segments', 'residues'}
+                                'atoms', 'segments', 'residues', 'is_uptodate'}
 
     for cls in groups:
         bases[cls] = GBase._subclass()
@@ -443,7 +443,7 @@ class GroupBase(_MutableBase):
         super(GroupBase, self).__setattr__(attr, value)
 
     def __len__(self):
-        return len(self._ix)
+        return len(self.ix)
 
     def __getitem__(self, item):
         # supports
@@ -2433,6 +2433,10 @@ class ComponentBase(_MutableBase):
         self._ix = ix
         self._u = u
 
+    def __repr__(self):
+        return ("<{} {}>"
+                "".format(self.level.name.capitalize(), self.ix))
+
     def __lt__(self, other):
         if self.level != other.level:
             raise TypeError("Can't compare different level objects")
@@ -2776,7 +2780,7 @@ class UpdatingAtomGroup(AtomGroup):
         # its check, no self.attribute access can be made before this line
         self._u = base_group.universe
         self._selections = selections
-        self.selection_strings = strings
+        self._selection_strings = strings
         self._base_group = base_group
         self._lastupdate = None
         self._derived_class = base_group._derived_class
@@ -2854,7 +2858,7 @@ class UpdatingAtomGroup(AtomGroup):
     def __getattribute__(self, name):
         # ALL attribute access goes through here
         # If the requested attribute isn't in the shortcut list, update ourselves
-        if not name in _UAG_SHORTCUT_ATTRS:
+        if not (name.startswith('_') or name in _UAG_SHORTCUT_ATTRS):
             self._ensure_updated()
         # Going via object.__getattribute__ then bypasses this check stage
         return object.__getattribute__(self, name)
@@ -2865,13 +2869,13 @@ class UpdatingAtomGroup(AtomGroup):
         # - recreate UAG as created through select_atoms (basegroup and selstrs)
         # even if base_group is a UAG this will work through recursion
         return (_unpickle_uag,
-                (self._base_group.__reduce__(), self._selections, self.selection_strings))
+                (self._base_group.__reduce__(), self._selections, self._selection_strings))
 
     def __repr__(self):
         basestr = super(UpdatingAtomGroup, self).__repr__()
-        if not self.selection_strings:
+        if not self._selection_strings:
             return basestr
-        sels = "'{}'".format("' + '".join(self.selection_strings))
+        sels = "'{}'".format("' + '".join(self._selection_strings))
         # Cheap comparison. Might fail for corner cases but this is
         # mostly cosmetic.
         if self._base_group is self.universe.atoms:
@@ -2880,7 +2884,7 @@ class UpdatingAtomGroup(AtomGroup):
             basegrp = "another AtomGroup."
         # With a shorthand to conditionally append the 's' in 'selections'.
         return "{}, with selection{} {} on {}>".format(basestr[:-1],
-                    "s"[len(self.selection_strings)==1:], sels, basegrp)
+                    "s"[len(self._selection_strings)==1:], sels, basegrp)
 
 # Define relationships between these classes
 # with Level objects
