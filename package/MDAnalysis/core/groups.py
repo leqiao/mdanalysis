@@ -153,21 +153,22 @@ def make_classes():
 
     # The 'GBase' middle man is needed so that a single topologyattr
     #  patching applies automatically to all groups.
-    GBase = bases[GroupBase] = _TopologyAttrContainer._subclass()
+    GBase = bases[GroupBase] = _TopologyAttrContainer._subclass(singular=False)
     GBase._SETATTR_WHITELIST = {  # list of Group attributes we can set
         'positions', 'velocities', 'forces',
         'atoms', 'segments', 'residues',
         'is_uptodate'  # for UpdatingAtomGroup
     }
-
     for cls in groups:
-        bases[cls] = GBase._subclass()
-
-    # In the current Group-centered topology scheme no attributes apply only
-    #  to ComponentBase, so no need to have a 'CB' middle man.
-    #CBase = _TopologyAttrContainer(singular=True)
+        bases[cls] = GBase._subclass(singular=False)
+    # CBase for patching all components
+    CBase = bases[ComponentBase] = _TopologyAttrContainer._subclass(singular=True)
+    CBase._SETATTR_WHITELIST = {
+        'position', 'velocity', 'force',
+        'atoms', 'segments', 'residues',
+    }
     for cls in components:
-        bases[cls] = _TopologyAttrContainer._subclass(singular=True)
+        bases[cls] = CBase._subclass(singular=True)
 
     # Initializes the class cache.
     for cls in groups + components:
@@ -190,10 +191,8 @@ class _TopologyAttrContainer(object):
       The mixed subclasses become the final container classes specific to each
       :class:`Universe`.
     """
-    _singular = False
-
     @classmethod
-    def _subclass(cls, singular=None):
+    def _subclass(cls, singular):
         """Factory method returning :class:`_TopologyAttrContainer` subclasses.
 
         Parameters
@@ -207,10 +206,7 @@ class _TopologyAttrContainer(object):
         type
             A subclass of :class:`_TopologyAttrContainer`, with the same name.
         """
-        if singular is not None:
-            return type(cls.__name__, (cls,), {'_singular': bool(singular)})
-        else:
-            return type(cls.__name__, (cls,), {})
+        return type(cls.__name__, (cls,), {'_singular': bool(singular)})
 
     @classmethod
     def _mix(cls, other):
