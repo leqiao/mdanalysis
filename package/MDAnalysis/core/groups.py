@@ -156,6 +156,7 @@ def make_classes():
     GBase = bases[GroupBase] = _TopologyAttrContainer._subclass(singular=False)
     GBase._SETATTR_WHITELIST = {  # list of Group attributes we can set
         'positions', 'velocities', 'forces',
+        'dimensions',
         'atoms', 'segments', 'residues',
         'is_uptodate'  # for UpdatingAtomGroup
     }
@@ -165,6 +166,7 @@ def make_classes():
     CBase = bases[ComponentBase] = _TopologyAttrContainer._subclass(singular=True)
     CBase._SETATTR_WHITELIST = {
         'position', 'velocity', 'force',
+        'dimensions',
         'atoms', 'segments', 'residues',
     }
     for cls in components:
@@ -2436,6 +2438,17 @@ class ComponentBase(_MutableBase):
         # index of component
         self._ix = ix
         self._u = u
+
+    def __setattr__(self, attr, value):
+        # `ag.this = 42` calls setattr(ag, 'this', 42)
+        # we scan 'this' to see if it is either 'private'
+        # or a known attribute (WHITELIST)
+        if not (attr.startswith('_') or attr in self._SETATTR_WHITELIST):
+            raise AttributeError(
+                "Cannot set arbitrary attributes to a Component")
+        # if it is, we allow the setattr to proceed by deferring to the super
+        # behaviour (ie do it)
+        super(ComponentBase, self).__setattr__(attr, value)
 
     def __repr__(self):
         return ("<{} {}>"
