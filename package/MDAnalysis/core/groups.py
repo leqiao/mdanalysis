@@ -154,8 +154,11 @@ def make_classes():
     # The 'GBase' middle man is needed so that a single topologyattr
     #  patching applies automatically to all groups.
     GBase = bases[GroupBase] = _TopologyAttrContainer._subclass()
-    GBase._SETATTR_WHITELIST = {'positions', 'velocities', 'forces',
-                                'atoms', 'segments', 'residues', 'is_uptodate'}
+    GBase._SETATTR_WHITELIST = {  # list of Group attributes we can set
+        'positions', 'velocities', 'forces',
+        'atoms', 'segments', 'residues',
+        'is_uptodate'  # for UpdatingAtomGroup
+    }
 
     for cls in groups:
         bases[cls] = GBase._subclass()
@@ -438,8 +441,13 @@ class GroupBase(_MutableBase):
         return hash((self._u, self.__class__, tuple(self.ix.tolist())))
 
     def __setattr__(self, attr, value):
+        # `ag.this = 42` calls setattr(ag, 'this', 42)
+        # we scan 'this' to see if it is either 'private'
+        # or a known attribute (WHITELIST)
         if not (attr.startswith('_') or attr in self._SETATTR_WHITELIST):
-            raise AttributeError("I cannae do it captain!")
+            raise AttributeError("Cannot set arbitrary attributes to a Group")
+        # if it is, we allow the setattr to proceed by deferring to the super
+        # behaviour (ie do it)
         super(GroupBase, self).__setattr__(attr, value)
 
     def __len__(self):
