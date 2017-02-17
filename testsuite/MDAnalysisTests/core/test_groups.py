@@ -1027,9 +1027,19 @@ class TestAttributeSetting(object):
         with pytest.raises(AttributeError):
             group.this = 'that'
 
+<<<<<<< HEAD
     @pytest.mark.parametrize('groupname', ['atoms', 'residues', 'segments'])
     def test_setting_component_fails(self, groupname):
         u = make_Universe()
+=======
+    def test_making_subclass_works(self):
+        class AwesomeGroup(groups.AtomGroup):
+            # I want to create a subclass of AtomGroup
+            # that has a new attribute, should be possible..
+            def __init__(self, ix, u, thing):
+                super(AwesomeGroup, self).__init__(ix, u)
+                self.thing = thing
+>>>>>>> Removed setattr protection for subclasses of Groups
 
         component = getattr(u, groupname)[0]
 
@@ -1037,3 +1047,7 @@ class TestAttributeSetting(object):
             component.this = 'that'
 
 
+<<<<<<< HEAD
+=======
+        assert_(ag.thing_thingy() == 'wowwow')
+>>>>>>> Removed setattr protection for subclasses of Groups

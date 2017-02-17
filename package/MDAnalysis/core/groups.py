@@ -158,7 +158,6 @@ def make_classes():
         'positions', 'velocities', 'forces',
         'dimensions',
         'atoms', 'segments', 'residues',
-        'is_uptodate'  # for UpdatingAtomGroup
     }
     for cls in groups:
         bases[cls] = GBase._subclass(singular=False)
@@ -442,7 +441,11 @@ class GroupBase(_MutableBase):
         # `ag.this = 42` calls setattr(ag, 'this', 42)
         # we scan 'this' to see if it is either 'private'
         # or a known attribute (WHITELIST)
-        if not (attr.startswith('_') or attr in self._SETATTR_WHITELIST):
+        if (not attr.startswith('_') and
+            type(self) in (self.universe._classes[AtomGroup],
+                           self.universe._classes[ResidueGroup],
+                           self.universe._classes[SegmentGroup])
+            and not attr in self._SETATTR_WHITELIST):
             raise AttributeError("Cannot set arbitrary attributes to a Group")
         # if it is, we allow the setattr to proceed by deferring to the super
         # behaviour (ie do it)
@@ -2440,14 +2443,13 @@ class ComponentBase(_MutableBase):
         self._u = u
 
     def __setattr__(self, attr, value):
-        # `ag.this = 42` calls setattr(ag, 'this', 42)
-        # we scan 'this' to see if it is either 'private'
-        # or a known attribute (WHITELIST)
-        if not (attr.startswith('_') or attr in self._SETATTR_WHITELIST):
+        if (not attr.startswith('_') and
+            type(self) in (self.universe._classes[Atom],
+                           self.universe._classes[Residue],
+                           self.universe._classes[Segment]) and
+            not attr in self._SETATTR_WHITELIST):
             raise AttributeError(
                 "Cannot set arbitrary attributes to a Component")
-        # if it is, we allow the setattr to proceed by deferring to the super
-        # behaviour (ie do it)
         super(ComponentBase, self).__setattr__(attr, value)
 
     def __repr__(self):
