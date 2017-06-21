@@ -703,25 +703,17 @@ class Universe(object):
         self._class_bases[ComponentBase]._whitelist(attr)
 
         for cls in attr.target_classes:
-            try:
-                self._class_bases[cls]._add_prop(attr)
-            except (KeyError, AttributeError):
-                pass
+            self._class_bases[cls]._add_prop(attr)
 
-        try:
-            transplants = attr.transplants
-        except AttributeError:
-            # not every Attribute will have a transplant dict
-            pass
-        else:
-            # Group transplants
-            for cls in (Atom, Residue, Segment, GroupBase,
-                        AtomGroup, ResidueGroup, SegmentGroup):
-                for funcname, meth in transplants[cls]:
-                    setattr(self._class_bases[cls], funcname, meth)
-            # Universe transplants
-            for funcname, meth in transplants['Universe']:
-                setattr(self.__class__, funcname, meth)
+        # TODO: Try and shove this into cls._add_prop
+        # Group transplants
+        for cls in (Atom, Residue, Segment, GroupBase,
+                    AtomGroup, ResidueGroup, SegmentGroup):
+            for funcname, meth in attr.transplants[cls]:
+                setattr(self._class_bases[cls], funcname, meth)
+        # Universe transplants
+        for funcname, meth in attr.transplants['Universe']:
+            setattr(self.__class__, funcname, meth)
 
     def add_Residue(self, segment=None, **attrs):
         """Add a new Residue to this Universe

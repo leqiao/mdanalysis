@@ -187,6 +187,8 @@ class TopologyAttr(object):
     singular = 'topologyattr'
     per_object = None  # ie Resids per_object = 'residue'
     top = None  # pointer to Topology object
+    transplants = defaultdict(list)
+    target_classes = []
 
     groupdoc = None
     singledoc = None
