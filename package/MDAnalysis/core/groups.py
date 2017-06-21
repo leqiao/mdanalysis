@@ -155,18 +155,16 @@ def make_classes():
     #  patching applies automatically to all groups.
     GBase = bases[GroupBase] = _TopologyAttrContainer._subclass(singular=False)
     GBase._SETATTR_WHITELIST = {  # list of Group attributes we can set
-        'positions', 'velocities', 'forces',
-        'dimensions',
-        'atoms', 'segments', 'residues',
+        'positions', 'velocities', 'forces', 'dimensions',
+        'atoms', 'residue', 'residues', 'segment', 'segments',
     }
     for cls in groups:
         bases[cls] = GBase._subclass(singular=False)
     # CBase for patching all components
     CBase = bases[ComponentBase] = _TopologyAttrContainer._subclass(singular=True)
     CBase._SETATTR_WHITELIST = {
-        'position', 'velocity', 'force',
-        'dimensions',
-        'atoms', 'segments', 'residues',
+        'position', 'velocity', 'force', 'dimensions',
+        'atoms', 'residue', 'residues', 'segment', 'segments',
     }
     for cls in components:
         bases[cls] = CBase._subclass(singular=True)
@@ -1849,9 +1847,6 @@ class AtomGroup(GroupBase):
                 which is often the case with high-resolution crystal structures
                 e.g. `resid 4 and resname ALA and altloc B` selects only the
                 atoms of ALA-4 that have an altloc B record.
-            moltype *molecule-type*
-                select by molecule type, e.g. ``moltype Protein_A``. At the
-                moment, only the TPR format defines the molecule type.
 
         **Boolean**
 
@@ -1970,8 +1965,6 @@ class AtomGroup(GroupBase):
            Resid selection now takes icodes into account where present.
         .. versionadded:: 0.16.0
            Updating selections now possible by setting the ``updating`` argument.
-        .. versionadded:: 0.17.0
-           Added *moltype* selection.
 
         """
         updating = selgroups.pop('updating', False)
